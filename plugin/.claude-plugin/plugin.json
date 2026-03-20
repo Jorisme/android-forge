@@ -1,1 +1,11 @@
-{"name":"android-forge","version":"1.0.0","description":"Blueprint-driven Android development orchestration for Claude Code.","author":{"name":"Menno"}}
+{
+  "name": "android-forge",
+  "version": "1.1.0",
+  "description": "Blueprint-driven Android development orchestration for Claude Code — with Agent Teams parallel execution, TDD-first, and healthcare/FHIR support.",
+  "author": {
+    "name": "Menno"
+  },
+  "repository": "https://github.com/Jorisme/android-forge",
+  "keywords": ["android", "kotlin", "compose", "blueprint", "tdd", "fhir", "healthcare", "agent-teams"],
+  "license": "MIT"
+}

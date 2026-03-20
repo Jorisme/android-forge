@@ -28,7 +28,7 @@ That's it. Skills auto-activate when you work on Android code. Agents are availa
 
 ## What's Included
 
-### Slash Commands (6)
+### Slash Commands (8)
 
 | Command | Purpose |
 |---------|---------|
@@ -38,8 +38,10 @@ That's it. Skills auto-activate when you work on Android code. Agents are availa
 | `/new-android-app` | Scaffold a full project structure from a blueprint |
 | `/build-check` | Diagnose and fix Android build failures |
 | `/release-prep` | Comprehensive Play Store release readiness checklist |
+| `/team-build` | **Parallel feature implementation** — spawn Agent Teams to build multiple features simultaneously |
+| `/team-review` | **Parallel code review** — 4-5 specialist reviewers examine code from different angles at once |
 
-### Agents (4)
+### Agents (5)
 
 | Agent | Specialization |
 |-------|---------------|
@@ -47,6 +49,7 @@ That's it. Skills auto-activate when you work on Android code. Agents are availa
 | `compose-specialist` | Jetpack Compose UI, Material 3, state management, accessibility, animation |
 | `gradle-doctor` | Build diagnostics, dependency resolution, version compatibility, optimization |
 | `tdd-enforcer` | Test-Driven Development, JUnit 5, MockK, Turbine, Compose UI testing |
+| `team-orchestrator` | **Agent Teams coordination** — task decomposition, file ownership, parallel execution patterns |
 
 ### Skills (3, auto-invoked)
 
@@ -154,24 +157,65 @@ Android Forge includes specialized support for Dutch healthcare Android developm
 
 This skill auto-activates whenever healthcare-related terms appear in your conversation.
 
+## Parallel Execution with Agent Teams
+
+Android Forge v1.1 adds native support for Claude Code's Agent Teams — multiple Claude instances working in parallel on your Android project.
+
+### Enable Agent Teams
+
+Add to your environment or `settings.json`:
+```
+CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
+```
+
+### Parallel Feature Development
+
+```
+/team-build fundradar_blueprint_v2.md phase 2
+```
+
+This decomposes the phase into parallel work streams, defines shared interfaces first, then spawns teammates to implement features simultaneously — each in their own module with clear file ownership.
+
+### Parallel Code Review
+
+```
+/team-review feature/payments/
+```
+
+Spawns 4-5 specialist reviewers (architecture, Compose quality, testing, security, Gradle) that examine the code simultaneously. Results are synthesized into a unified prioritized report.
+
+### When to Use What
+
+| Scenario | Approach | Token Cost |
+|----------|----------|-----------|
+| Single feature, sequential | Normal session | 1x |
+| Quick parallel checks (lint, search, verify) | Subagents | 2-3x |
+| Multi-feature phase from blueprint | `/team-build` (Agent Teams) | 3-4x |
+| Comprehensive code review | `/team-review` (Agent Teams) | 3-4x |
+| Debugging with competing hypotheses | Agent Teams (ad-hoc) | 3-4x |
+
 ## Project Structure
 
 ```
 android-forge/
 ├── .claude-plugin/
-│   └── plugin.json              # Plugin manifest
+│   ├── plugin.json              # Plugin manifest
+│   └── marketplace.json         # Marketplace registry
 ├── commands/                     # Slash commands
 │   ├── app-interview.md          # /app-interview
 │   ├── blueprint.md              # /blueprint
 │   ├── blueprint-review.md       # /blueprint-review
 │   ├── new-android-app.md        # /new-android-app
 │   ├── build-check.md            # /build-check
-│   └── release-prep.md           # /release-prep
+│   ├── release-prep.md           # /release-prep
+│   ├── team-build.md             # /team-build (Agent Teams)
+│   └── team-review.md            # /team-review (Agent Teams)
 ├── agents/                       # Specialized subagents
 │   ├── blueprint-architect.md
 │   ├── compose-specialist.md
 │   ├── gradle-doctor.md
-│   └── tdd-enforcer.md
+│   ├── tdd-enforcer.md
+│   └── team-orchestrator.md      # Agent Teams coordination
 ├── skills/                       # Auto-invoked skills
 │   ├── android-conventions/
 │   │   └── SKILL.md
@@ -223,6 +267,13 @@ Edit `hooks/hooks.json` to add or change event handlers. Supported events:
 - `Stop`
 
 ## Version History
+
+### v1.1.0
+- **Agent Teams support**: `/team-build` and `/team-review` commands for parallel execution
+- New `team-orchestrator` agent for task decomposition and coordination
+- Parallel patterns: layer-parallel, feature-parallel, TDD-pair, review, debugging
+- File ownership rules and worktree strategy for conflict-free parallel work
+- Cost awareness guidance (when teams justify the 3-4x token overhead)
 
 ### v1.0.0
 - Initial release
