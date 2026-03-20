@@ -56,6 +56,12 @@ if [ "$TODO_COUNT" -gt 0 ]; then
     echo "📝 Open TODOs/FIXMEs: $TODO_COUNT"
 fi
 
+# Run version check (uses cache, won't slow down startup)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -x "$SCRIPT_DIR/check-versions.sh" ]; then
+    "$SCRIPT_DIR/check-versions.sh" 2>/dev/null
+fi
+
 # Check last build status
 if [ -d "app/build" ]; then
     if [ -f "app/build/outputs/apk/debug/app-debug.apk" ]; then
