@@ -1,0 +1,13 @@
+﻿{
+  "name": "android-forge",
+  "owner": {
+    "name": "Menno"
+  },
+  "plugins": [
+    {
+      "name": "android-forge",
+      "source": ".",
+      "description": "Blueprint-driven Android development orchestration — TDD-first, with healthcare/FHIR support."
+    }
+  ]
+}
