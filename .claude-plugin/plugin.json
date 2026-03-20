@@ -1,0 +1,9 @@
+{
+  "name": "android-forge",
+  "version": "1.0.0",
+  "description": "Android development orchestration for Claude Code — blueprint-driven, TDD-first, with healthcare/FHIR support. Designed for modern 2026 Kotlin/Compose stack.",
+  "author": "Menno",
+  "repository": "https://github.com/menno/android-forge",
+  "keywords": ["android", "kotlin", "compose", "blueprint", "tdd", "fhir", "healthcare"],
+  "license": "MIT"
+}
