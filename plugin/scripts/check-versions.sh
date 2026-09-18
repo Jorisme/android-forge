@@ -47,7 +47,7 @@ fetch_google_maven() {
     local group_path="${group//.//}"
     local url="https://dl.google.com/android/maven2/${group_path}/${artifact}/maven-metadata.xml"
     local result
-    result=$(curl -s $CURL_EXTRA_FLAGS --connect-timeout 5 "$url" 2>/dev/null)
+    result=$(curl -s $CURL_EXTRA_FLAGS --connect-timeout 5 --max-time 8 "$url" 2>/dev/null)
     if [ $? -eq 0 ] && [ -n "$result" ]; then
         # Extract latest release version (skip alpha, beta, rc, dev)
         echo "$result" | grep -oP '<version>\K[^<]+' | \
@@ -60,11 +60,13 @@ fetch_google_maven() {
 fetch_maven_central() {
     local group="$1"
     local artifact="$2"
-    local url="https://search.maven.org/solrsearch/select?q=g:${group}+AND+a:${artifact}&rows=20&core=gav&wt=json"
+    local group_path="${group//.//}"
+    # search.maven.org's Solr API can take 90+ s to answer; the static metadata file is instant.
+    local url="https://repo1.maven.org/maven2/${group_path}/${artifact}/maven-metadata.xml"
     local result
-    result=$(curl -s $CURL_EXTRA_FLAGS --connect-timeout 5 "$url" 2>/dev/null)
+    result=$(curl -s $CURL_EXTRA_FLAGS --connect-timeout 5 --max-time 8 "$url" 2>/dev/null)
     if [ $? -eq 0 ] && [ -n "$result" ]; then
-        echo "$result" | grep -oP '"v":"[^"]+' | sed 's/"v":"//' | \
+        echo "$result" | grep -oP '<version>\K[^<]+' | \
             grep -v -iE '(alpha|beta|rc|dev|eap|snapshot)' | \
             sort -V | tail -1
     fi
@@ -130,7 +132,7 @@ if use_cache && [ "$1" != "--force" ]; then
 fi
 
 # Check for internet connectivity
-if ! curl -s $CURL_EXTRA_FLAGS --connect-timeout 3 "https://dl.google.com" >/dev/null 2>&1; then
+if ! curl -s $CURL_EXTRA_FLAGS --connect-timeout 3 --max-time 5 "https://dl.google.com" >/dev/null 2>&1; then
     echo "⚠️  No internet connection — using hardcoded reference versions"
     echo ""
     echo "Reference stack (March 2026):"
@@ -172,7 +174,7 @@ for component in "${COMPONENTS[@]}"; do
     current=$(read_current "$key")
     
     # Choose Maven source
-    if [[ "$group" == androidx.* ]]; then
+    if [[ "$group" == androidx.* || "$group" == com.android.* ]]; then
         latest=$(fetch_google_maven "$group" "$artifact")
     else
         latest=$(fetch_maven_central "$group" "$artifact")

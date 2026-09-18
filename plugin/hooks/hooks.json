@@ -17,7 +17,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/session-init.sh"
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/session-init.sh",
+            "timeout": 30
           }
         ]
       }

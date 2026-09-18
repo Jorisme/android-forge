@@ -59,7 +59,14 @@ fi
 # Run version check (uses cache, won't slow down startup)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [ -x "$SCRIPT_DIR/check-versions.sh" ]; then
-    "$SCRIPT_DIR/check-versions.sh" 2>/dev/null
+    CACHE=".android-forge-versions-cache"
+    if [ -f "$CACHE" ] && [ $(( $(date +%s) - $(stat -c %Y "$CACHE" 2>/dev/null || echo 0) )) -lt 86400 ]; then
+        "$SCRIPT_DIR/check-versions.sh" 2>/dev/null
+    else
+        # Uncached fetch takes ~50 s; refresh in background so startup is not blocked.
+        echo "🔍 Version check refreshing in background — results next session"
+        nohup "$SCRIPT_DIR/check-versions.sh" >/dev/null 2>&1 &
+    fi
 fi
 
 # Check last build status
