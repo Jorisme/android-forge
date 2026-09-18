@@ -16,6 +16,19 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
+# Curl flag fix-up:
+#   On Windows, the Git Bash curl binary uses Schannel as its TLS backend. Schannel performs
+#   a strict revocation check (CRL/OCSP) that fails with CRYPT_E_NO_REVOCATION_CHECK whenever
+#   the revocation servers are unreachable (corporate firewalls, captive networks, etc.).
+#   The result is that `curl https://dl.google.com` exits non-zero even though the network
+#   is healthy — and this script then falls back to "No internet connection — using hardcoded
+#   reference versions". The fix is `--ssl-no-revoke`, which is Schannel-only; applying it on
+#   OpenSSL/LibreSSL curl prints "option unknown" and aborts. So we detect the backend first.
+CURL_EXTRA_FLAGS=""
+if curl --version 2>/dev/null | grep -qi "schannel"; then
+    CURL_EXTRA_FLAGS="--ssl-no-revoke"
+fi
+
 # Check if cache is fresh enough
 use_cache() {
     if [ -f "$CACHE_FILE" ]; then
@@ -34,7 +47,7 @@ fetch_google_maven() {
     local group_path="${group//.//}"
     local url="https://dl.google.com/android/maven2/${group_path}/${artifact}/maven-metadata.xml"
     local result
-    result=$(curl -s --connect-timeout 5 "$url" 2>/dev/null)
+    result=$(curl -s $CURL_EXTRA_FLAGS --connect-timeout 5 "$url" 2>/dev/null)
     if [ $? -eq 0 ] && [ -n "$result" ]; then
         # Extract latest release version (skip alpha, beta, rc, dev)
         echo "$result" | grep -oP '<version>\K[^<]+' | \
@@ -49,7 +62,7 @@ fetch_maven_central() {
     local artifact="$2"
     local url="https://search.maven.org/solrsearch/select?q=g:${group}+AND+a:${artifact}&rows=20&core=gav&wt=json"
     local result
-    result=$(curl -s --connect-timeout 5 "$url" 2>/dev/null)
+    result=$(curl -s $CURL_EXTRA_FLAGS --connect-timeout 5 "$url" 2>/dev/null)
     if [ $? -eq 0 ] && [ -n "$result" ]; then
         echo "$result" | grep -oP '"v":"[^"]+' | sed 's/"v":"//' | \
             grep -v -iE '(alpha|beta|rc|dev|eap|snapshot)' | \
@@ -57,11 +70,31 @@ fetch_maven_central() {
     fi
 }
 
-# Read current version from libs.versions.toml
+# Read current version from libs.versions.toml.
+#
+# Robust against two real-world TOML conventions:
+#   1. Naming variants — projects use bare (`room`), `androidx-` prefixed (`androidx-room`),
+#      `kotlinx-` prefixed (`kotlinx-coroutines`), and the camelCase ↔ kebab-case mismatch
+#      between the script's COMPONENTS array (camelCase, e.g. `composeBom`) and TOML keys
+#      (kebab-case, e.g. `compose-bom`). We try all six variants.
+#   2. Multi-quote lines — version-pin lines often carry inline comments with quoted text
+#      (`hilt = "2.59.2"  # bumped from 2.56 — throws "Android BaseExtension not found"`).
+#      The original sed `s/.*"\(.*\)".*/\1/` is greedy and grabs the LAST quoted segment
+#      (the comment), reporting `"Android BaseExtension not found"` as the version. We
+#      anchor to the FIRST quoted segment instead with `s/^[^"]*"\([^"]*\)".*/\1/`.
 read_current() {
     local key="$1"
     if [ -f "$TOML_FILE" ]; then
-        grep "^${key}\s*=" "$TOML_FILE" 2>/dev/null | head -1 | sed 's/.*"\(.*\)".*/\1/'
+        local kebab
+        kebab=$(echo "$key" | sed 's/\([A-Z]\)/-\L\1/g')
+        local pattern result
+        for pattern in "$key" "androidx-$key" "kotlinx-$key" "$kebab" "androidx-$kebab" "kotlinx-$kebab"; do
+            result=$(grep "^${pattern}\s*=" "$TOML_FILE" 2>/dev/null | head -1 | sed 's/^[^"]*"\([^"]*\)".*/\1/')
+            if [ -n "$result" ]; then
+                echo "$result"
+                return
+            fi
+        done
     fi
 }
 
@@ -97,7 +130,7 @@ if use_cache && [ "$1" != "--force" ]; then
 fi
 
 # Check for internet connectivity
-if ! curl -s --connect-timeout 3 "https://dl.google.com" >/dev/null 2>&1; then
+if ! curl -s $CURL_EXTRA_FLAGS --connect-timeout 3 "https://dl.google.com" >/dev/null 2>&1; then
     echo "⚠️  No internet connection — using hardcoded reference versions"
     echo ""
     echo "Reference stack (March 2026):"
